@@ -1,6 +1,7 @@
 from setuptools import setup
 
-from proxy_finder import __version__
+with open('proxy_finder/version.py') as f:
+    __version__ = f.read().split('=', 1)[1].strip()
 
 
 setup(
