@@ -3,14 +3,19 @@ import os
 import requests
 
 
+# Default timeout for requests to proxy-finder instance
+DEFAULT_TIMEOUT = 5.0
+
+
 class API:
     """
     API object to interact with a proxy-finder instance. The methods
     implemented are the same as described for proxy-finder.
     """
 
-    def __init__(self, root):
+    def __init__(self, root, timeout=DEFAULT_TIMEOUT):
         self._root = root
+        self._timeout = timeout
 
     def list(self, options={}):
         """
@@ -45,7 +50,8 @@ class API:
 
     def _get(self, url, params={}):
         full_url = os.path.join(self._root, url)
-        with requests.get(full_url, params=params) as response:
+        with requests.get(full_url, params=params,
+                          timeout=self._timeout) as response:
             if response.headers['Content-Type'] == 'application/json':
                 return response.json()
             else:

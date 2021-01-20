@@ -9,6 +9,20 @@ from .proxy import Proxy
 from . import utils
 
 
+class PoolError(Exception):
+    """
+    Class for errors in Pool.
+    """
+    pass
+
+
+class UnreachableInstanceError(PoolError):
+    """
+    Error for unreachable proxy-finder instance.
+    """
+    pass
+
+
 class Pool:
     """
     Pool keeps a list of proxies and has some methods to work with them.
@@ -24,6 +38,12 @@ class Pool:
     def __init__(self, proxy_list, max_threads=max_threads_default):
         self._proxy_list = proxy_list
         self._max_threads = max_threads
+
+    def __bool__(self):
+        """
+        Returns True if self._proxy_list is not empty, else False.
+        """
+        return bool(self._proxy_list)
 
     def __len__(self):
         """
@@ -140,9 +160,15 @@ class Pool:
         Loads pool from the API object with given options (that is passed to
         API.list).
         """
-        result = api.list(options)['result']
-        proxy_list = [
-            Proxy(**dct)
-            for dct in result
-        ]
-        return cls(proxy_list)
+        try:
+            result = api.list(options)['result']
+
+        except requests.exceptions.ConnectTimeout:
+            raise UnreachableInstanceError()
+
+        else:
+            proxy_list = [
+                Proxy(**dct)
+                for dct in result
+            ]
+            return cls(proxy_list)
