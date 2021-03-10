@@ -13,5 +13,5 @@ setup(
         'proxy_finder',
     ],
     zip_safe=False,
-    install_requires=['requests==2.25.1'],
+    install_requires=['requests==2.25.1', 'aiohttp==3.7.4.post0'],
 )

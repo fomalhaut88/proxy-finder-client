@@ -31,3 +31,23 @@ def execute_threads(threads_gen):
     threads = list(threads_gen)
     list(map(Thread.start, threads))
     list(map(Thread.join, threads))
+
+
+def prepare_list_params(options):
+    params = {}
+    dict_pass_value(options, params, 'country')
+    dict_pass_value(options, params, 'region')
+    dict_pass_value(options, params, 'city')
+    dict_pass_value(options, params, 'count', str)
+    dict_pass_value(options, params, 'score', str)
+    dict_pass_value(options, params, 'ordered',
+                          lambda x: '1' if x else '')
+    dict_pass_value(options, params, 'format')
+    return params
+
+
+def dict_pass_value(src_dict, dst_dict, key, modifier=None):
+    if modifier is None:
+        modifier = lambda x: x
+    if key in src_dict:
+        dst_dict[key] = modifier(src_dict[key])

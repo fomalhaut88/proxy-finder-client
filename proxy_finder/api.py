@@ -2,6 +2,8 @@ import os
 
 import requests
 
+from .utils import prepare_list_params
+
 
 # Default timeout for requests to proxy-finder instance
 DEFAULT_TIMEOUT = 5.0
@@ -21,7 +23,7 @@ class API:
         """
         List of available proxies.
         """
-        params = self._prepare_list_params(options)
+        params = prepare_list_params(options)
         return self._get('list', params)
 
     def geo(self, host):
@@ -56,22 +58,3 @@ class API:
                 return response.json()
             else:
                 return response.text
-
-    def _prepare_list_params(self, options):
-        params = {}
-        self._dict_pass_value(options, params, 'country')
-        self._dict_pass_value(options, params, 'region')
-        self._dict_pass_value(options, params, 'city')
-        self._dict_pass_value(options, params, 'count', str)
-        self._dict_pass_value(options, params, 'score', str)
-        self._dict_pass_value(options, params, 'ordered',
-                              lambda x: '1' if x else '')
-        self._dict_pass_value(options, params, 'format')
-        return params
-
-    @classmethod
-    def _dict_pass_value(cls, src_dict, dst_dict, key, modifier=None):
-        if modifier is None:
-            modifier = lambda x: x
-        if key in src_dict:
-            dst_dict[key] = modifier(src_dict[key])

@@ -1,4 +1,5 @@
 import requests
+import aiohttp
 
 
 class Proxy:
@@ -39,17 +40,45 @@ class Proxy:
         return func(url, proxies=proxies, params=params, data=data,
                     headers=headers, timeout=timeout)
 
+    async def request_async(self, url, method='GET', scheme='https', params={},
+                            data={}, headers={}, timeout=None):
+        """
+        Asynchronous requests the URL through the proxy with the given
+        parameters.
+        """
+        proxy = f"http://{self.host}:{self.port}"
+
+        async with aiohttp.ClientSession() as session:
+            func = getattr(session, method.lower())
+            return await func(url, proxy=proxy, params=params, data=data,
+                              headers=headers, timeout=timeout)
+
     def check(self, api):
         """
         Checks proxy by API object.
         """
         return api.check(self.host, self.port)['result']
 
+    async def check_async(self, api):
+        """
+        Asynchronous checks proxy by API object.
+        """
+        return (await api.check(self.host, self.port))['result']
+
     def set_geo(self, api):
         """
         Sets geo information using API object.
         """
         geo = api.geo(self.host)['geo']
+        self.country = geo['country']
+        self.region = geo['region']
+        self.city = geo['city']
+
+    async def set_geo_async(self, api):
+        """
+        Asynchronous sets geo information using API object.
+        """
+        geo = (await api.geo(self.host))['geo']
         self.country = geo['country']
         self.region = geo['region']
         self.city = geo['city']

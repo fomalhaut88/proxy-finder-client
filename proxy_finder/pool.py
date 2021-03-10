@@ -1,9 +1,11 @@
+import asyncio
 from threading import Thread
 from copy import copy
 from queue import Queue, Empty
 from random import choice, shuffle
 
 import requests
+import aiohttp
 
 from .proxy import Proxy
 from . import utils
@@ -100,6 +102,30 @@ class Pool:
             else:
                 return response
 
+    async def request_async(self, url, **kwargs):
+        """
+        Same as request with asynchronpus interface.
+        """
+        # Set timeout
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout_default
+
+        # Loop to request throught proxy
+        while True:
+            # Get random proxy from the pool
+            proxy = self.get_random()
+
+            try:
+                # Try to request
+                response = await proxy.request_async(url, **kwargs)
+            except (asyncio.exceptions.TimeoutError,
+                    aiohttp.client_exceptions.ClientConnectorCertificateError,
+                    aiohttp.client_exceptions.ClientHttpProxyError):
+                # Continue trying if error
+                continue
+            else:
+                return response
+
     def request_many(self, args_list, **kwargs):
         """
         Requests URLs provided in args_list (with their custom parameters used
@@ -134,6 +160,16 @@ class Pool:
             result_list[idx] = result
         return result_list
 
+    async def request_many_async(self, args_list, **kwargs):
+        """
+        Same as request_many with async tasks instead of threads and queue.
+        """
+        tasks = [
+            self.request_async(**args, **kwargs)
+            for args in args_list
+        ]
+        return await asyncio.gather(*tasks, return_exceptions=True)
+
     def save(self, path):
         """
         Saves proxy list into a file.
@@ -162,6 +198,25 @@ class Pool:
         """
         try:
             result = api.list(options)['result']
+
+        except requests.exceptions.ConnectTimeout:
+            raise UnreachableInstanceError()
+
+        else:
+            proxy_list = [
+                Proxy(**dct)
+                for dct in result
+            ]
+            return cls(proxy_list)
+
+    @classmethod
+    async def from_async_api(cls, api, options={}):
+        """
+        Loads pool from the AsyncAPI object with given options (that is
+        passed to API.list).
+        """
+        try:
+            result = (await api.list(options))['result']
 
         except requests.exceptions.ConnectTimeout:
             raise UnreachableInstanceError()
