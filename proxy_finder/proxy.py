@@ -44,14 +44,24 @@ class Proxy:
                             data={}, headers={}, timeout=None):
         """
         Asynchronous requests the URL through the proxy with the given
-        parameters.
+        parameters. The method builds and returns Response object from
+        'requests' in order to finalize the asynchronous session correctly.
         """
         proxy = f"http://{self.host}:{self.port}"
-
         async with aiohttp.ClientSession() as session:
             func = getattr(session, method.lower())
-            return await func(url, proxy=proxy, params=params, data=data,
-                              headers=headers, timeout=timeout)
+            async with func(url, proxy=proxy, params=params, data=data,
+                                 headers=headers, timeout=timeout) as response:
+                response_from_requests = requests.models.Response()
+                response_from_requests.url = response.url
+                response_from_requests.cookies = response.cookies
+                response_from_requests.history = response.history
+                response_from_requests.reason = response.reason
+                response_from_requests.headers = response.headers
+                response_from_requests.status_code = response.status
+                response_from_requests._content = await response.content.read()
+                return response_from_requests
+
 
     def check(self, api):
         """
